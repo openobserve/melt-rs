@@ -11,10 +11,7 @@ pub struct Shard {
 }
 
 impl Shard {
-    pub fn new(
-        bloom_size: usize,
-        bloom_k: u64,
-    ) -> Self {
+    pub fn new(bloom_size: usize, bloom_k: u64) -> Self {
         Self {
             bucket: vec![],
             bloom_size,
@@ -29,20 +26,30 @@ impl Shard {
         return self.bloom_k;
     }
 
-    pub fn add_message(&mut self, trigrams: &[String], key:usize)  {
-        self.get_bucket().add_message( trigrams,key)
+    pub fn add_message(&mut self, trigrams: &[String], key: usize) {
+        self.get_bucket().add_message(trigrams, key)
     }
 
     #[inline(always)]
     pub fn search(&self, trigrams: &[String]) -> Vec<usize> {
         let query_bits = self.get_query_bits(trigrams);
-        return self.bucket.iter().map(|b| b.search(&query_bits)).flatten().collect();
+        return self
+            .bucket
+            .iter()
+            .map(|b| b.search(&query_bits))
+            .flatten()
+            .collect();
     }
 
     #[inline(always)]
     pub fn search_or(&self, trigrams: &[String]) -> Vec<usize> {
         let query_bits = self.get_query_bits(trigrams);
-        return self.bucket.iter().map(|b| b.search_or(&query_bits)).flatten().collect();
+        return self
+            .bucket
+            .iter()
+            .map(|b| b.search_or(&query_bits))
+            .flatten()
+            .collect();
     }
 
     #[inline(always)]

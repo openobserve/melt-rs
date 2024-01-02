@@ -1,15 +1,15 @@
-use std::collections::HashSet;
 use std::fs;
 use std::fs::File;
-use std::io::{Error, Read};
+use std::io::{BufWriter, Error, Read};
 
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::bigrams::bigram;
+// use std::collections::HashSet;
+// use crate::bigrams::bigram;
+// use crate::trigrams::trigram;
 use crate::bloom::estimate_parameters;
 use crate::shard::Shard;
-use crate::trigrams::trigram;
 
 #[derive(Serialize, Deserialize, Default, Clone)]
 pub struct SearchIndex {
@@ -108,6 +108,25 @@ impl SearchIndex {
         let serialized: Vec<u8> = bincode::serialize(&self.shards).unwrap();
         serialized.len()
     }
+
+    pub fn serialize_to_file(&self, filename: &str) -> Result<(), Box<bincode::ErrorKind>> {
+        let mut f = BufWriter::new(File::create(filename).unwrap());
+        bincode::serialize_into(&mut f, self)
+    }
+
+    pub fn deserialize_from_file(filename: &str) -> Result<SearchIndex, Box<bincode::ErrorKind>> {
+        let bytes = Self::get_file_as_byte_vec(filename).unwrap();
+        bincode::deserialize(&bytes[..])
+    }
+
+    fn get_file_as_byte_vec(filename: &str) -> Result<Vec<u8>, Error> {
+        let mut f = File::open(filename)?;
+        let metadata = fs::metadata(filename)?;
+        let mut buffer = vec![0; metadata.len() as usize];
+        f.read_exact(&mut buffer)?;
+
+        Ok(buffer)
+    }
 }
 
 fn get_file_as_byte_vec(filename: &str) -> Result<Vec<u8>, Error> {
@@ -120,16 +139,20 @@ fn get_file_as_byte_vec(filename: &str) -> Result<Vec<u8>, Error> {
 }
 
 fn grams(query: &str) -> Vec<String> {
-    let query = query.to_lowercase();
-    let mut vec = trigram(&query);
-    vec.extend(bigram(&query));
-    vec.extend(
-        query
-            .chars()
-            .map(|c| c.to_string())
-            .collect::<HashSet<String>>(),
-    );
-    vec
+    query
+        .to_lowercase()
+        .split_whitespace()
+        .map(|s| s.to_string())
+        .collect()
+    // let mut vec = trigram(&query);
+    // vec.extend(bigram(&query));
+    // vec.extend(
+    //     query
+    //         .chars()
+    //         .map(|c| c.to_string())
+    //         .collect::<HashSet<String>>(),
+    // );
+    // vec
 }
 
 #[test]
