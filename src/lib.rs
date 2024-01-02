@@ -1,7 +1,7 @@
 #![deny(
     unused_import_braces,
-    // unused_imports,
-    // unused_variables,
+    unused_imports,
+    unused_variables,
     unused_allocation,
     unused_extern_crates
 )]
@@ -14,7 +14,6 @@ pub mod index;
 mod shard;
 mod trigrams;
 
-mod bloom_v2;
 pub fn get_search_index() -> index::SearchIndex {
     index::SearchIndex::default()
 }

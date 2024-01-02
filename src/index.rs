@@ -13,7 +13,7 @@ use crate::bloom::estimate_parameters;
 use crate::shard::Shard;
 use crate::trigrams::trigram;
 
-#[derive(Serialize, Deserialize, Default, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct SearchIndex {
     shards: Vec<Shard>,
     size: usize,
@@ -21,13 +21,6 @@ pub struct SearchIndex {
 }
 
 impl SearchIndex {
-    pub fn default() -> SearchIndex {
-        SearchIndex {
-            shards: vec![],
-            size: 0,
-            prob: 0.6,
-        }
-    }
     pub fn default_with_prob(prob: f64) -> SearchIndex {
         SearchIndex {
             shards: vec![],
@@ -69,7 +62,7 @@ impl SearchIndex {
         let trigrams = if exact {
             grams(query)
         } else {
-            query.split(" ").flat_map(|q| grams(q)).collect()
+            query.split(' ').flat_map(grams).collect()
         };
         if trigrams.is_empty() {
             return vec![];
@@ -84,10 +77,7 @@ impl SearchIndex {
     }
 
     pub fn search_or(&self, query: &str) -> Vec<usize> {
-        let grams = query
-            .split(" ")
-            .flat_map(|q| grams(q))
-            .collect::<Vec<String>>();
+        let grams = query.split(' ').flat_map(grams).collect::<Vec<String>>();
         if grams.is_empty() {
             return vec![];
         }
@@ -123,10 +113,10 @@ impl SearchIndex {
     }
 
     fn get_file_as_byte_vec(filename: &str) -> Result<Vec<u8>, Error> {
-        let mut f = File::open(&filename)?;
-        let metadata = fs::metadata(&filename)?;
+        let mut f = File::open(filename)?;
+        let metadata = fs::metadata(filename)?;
         let mut buffer = vec![0; metadata.len() as usize];
-        f.read(&mut buffer)?;
+        f.read_exact(&mut buffer)?;
 
         Ok(buffer)
     }
@@ -143,6 +133,17 @@ fn grams(query: &str) -> Vec<String> {
             .collect::<HashSet<String>>(),
     );
     vec
+}
+
+/// Defaults for SearchIndex
+impl Default for SearchIndex {
+    fn default() -> SearchIndex {
+        SearchIndex {
+            shards: vec![],
+            size: 0,
+            prob: 0.6,
+        }
+    }
 }
 
 #[test]

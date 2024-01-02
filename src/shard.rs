@@ -21,10 +21,10 @@ impl Shard {
     }
 
     pub fn get_m(&self) -> usize {
-        return self.bloom_size;
+        self.bloom_size
     }
     pub fn get_k(&self) -> u64 {
-        return self.bloom_k;
+        self.bloom_k
     }
 
     pub fn add_message(&mut self, trigrams: &[String], key: usize) {
@@ -34,23 +34,19 @@ impl Shard {
     #[inline(always)]
     pub fn search(&self, trigrams: &[String]) -> Vec<usize> {
         let query_bits = self.get_query_bits(trigrams);
-        return self
-            .bucket
+        self.bucket
             .iter()
-            .map(|b| b.search(&query_bits))
-            .flatten()
-            .collect();
+            .flat_map(|b| b.search(&query_bits))
+            .collect()
     }
 
     #[inline(always)]
     pub fn search_or(&self, trigrams: &[String]) -> Vec<usize> {
         let query_bits = self.get_query_bits(trigrams);
-        return self
-            .bucket
+        self.bucket
             .iter()
-            .map(|b| b.search_or(&query_bits))
-            .flatten()
-            .collect();
+            .flat_map(|b| b.search_or(&query_bits))
+            .collect()
     }
 
     #[inline(always)]
@@ -68,18 +64,6 @@ impl Shard {
         self.bucket.last_mut().unwrap()
     }
 
-    // #[inline(always)]
-    // fn get_set_bits(bits: &Vec<u128>) -> Vec<u128> {
-    //     let mut set_bits = Vec::new();
-    //     for (i, &bit) in bits.iter().enumerate() {
-    //         for j in 0..128 {
-    //             if bit & (1 << j) != 0 {
-    //                 set_bits.push((i as u128) * 128 + j as u128);
-    //             }
-    //         }
-    //     }
-    //     set_bits
-    // }
     #[inline(always)]
     fn get_set_bits(bits: &BitVec) -> BitVec {
         let mut result = bitvec![0; bits.len()];

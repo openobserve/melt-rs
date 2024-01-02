@@ -36,25 +36,25 @@ impl Bucket {
         self.add_bloom(bloom_filter.get_bitset());
         self.messages[(self.bloom_count - 1) as usize] = key;
     }
-    // // add current document to the bloom index
-    // fn add_bloom(&mut self, vec: &[u128]) {
-    //     for i in 0..self.bloom_size * 128 as usize {
-    //         if vec[i / 128] & (1 << (i % 128)) != 0 {
-    //             self.bloom_filter[i] |= 1u128 << (self.bloom_count);
-    //         }
-    //     }
-    //     self.bloom_count += 1
-    // }
+
     fn add_bloom(&mut self, bitvec: &BitVec) {
+        // Ensure that the bloom_filter is large enough to accommodate the new bloom
+        let required_length = (self.bloom_count as usize + 1) * self.bloom_size * 128;
+        if self.bloom_filter.len() < required_length {
+            self.bloom_filter.resize(required_length, false);
+        }
+
         for i in 0..self.bloom_size * 128 {
-            if bitvec[i] {
-                self.bloom_filter.set(
-                    i + (self.bloom_count as usize * self.bloom_size * 128),
-                    true,
-                );
+            if *bitvec.get(i).as_deref().unwrap_or(&false) {
+                let index = i + (self.bloom_count as usize * self.bloom_size * 128);
+                // Set the bit only if the index is within the bounds
+                if index < self.bloom_filter.len() {
+                    self.bloom_filter.set(index, true);
+                }
             }
         }
-        self.bloom_count += 1
+
+        self.bloom_count += 1;
     }
 
     pub fn is_full(&self) -> bool {
@@ -76,7 +76,7 @@ impl Bucket {
             }
 
             if match_found {
-                results.push(self.messages[(segment_start / (self.bloom_size * 128)) as usize]);
+                results.push(self.messages[segment_start / (self.bloom_size * 128)]);
             }
         }
 
@@ -98,7 +98,7 @@ impl Bucket {
             }
 
             if match_found {
-                results.push(self.messages[(segment_start / (self.bloom_size * 128)) as usize]);
+                results.push(self.messages[segment_start / (self.bloom_size * 128)]);
             }
         }
 

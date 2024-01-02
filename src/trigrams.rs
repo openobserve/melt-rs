@@ -21,8 +21,7 @@ pub fn trigram(word: &str) -> Vec<String> {
     }
 
     let trigrams = (1..chars.len() - 1)
-        .into_iter()
-        .filter_map(|i| {
+        .flat_map(|i| {
             let trigram = &chars[i - 1..i + 2];
             let trigram_str = trigram.iter().collect();
             Some(trigram_str)

@@ -10,8 +10,7 @@ pub fn bigram(word: &str) -> Vec<String> {
     }
 
     let bigrams = (1..chars.len())
-        .into_iter()
-        .filter_map(|i| {
+        .flat_map(|i| {
             let trigram = &chars[i - 1..i + 1];
             let trigram_str = trigram.iter().collect();
             Some(trigram_str)
