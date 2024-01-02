@@ -1,7 +1,7 @@
-use criterion::{criterion_group, criterion_main, Criterion};
 use melt_rs::index::SearchIndex;
+use std::time;
 
-fn criterion_benchmark(c: &mut Criterion) {
+fn main() {
     let mut index = SearchIndex::default();
     for i in 1..1_000_000 {
         let _ = index.add(
@@ -21,10 +21,23 @@ fn criterion_benchmark(c: &mut Criterion) {
     for i in 2_000_001..3_000_001 {
         let _ = index.add(format!("World is ending and I dont like it at all, there would be sa time for this and that and where does it evolve around the sun so bright and big{}", i).as_str());
     }
-    c.bench_function("search for hello", |b| {
-        b.iter(|| index.search("hello", true))
-    });
-}
 
-criterion_group!(benches, criterion_benchmark);
-criterion_main!(benches);
+    for i in 1..5 {
+        index.add(format!("Ankur is doing fine - {}", i).as_str());
+    }
+    // index.add("Ankur is doing okay");
+    // index.add("Ankur is doing okay");
+    // index.add("Ankur is doing okay");
+
+    println!("Start serializing to disk");
+    index.serialize_to_file("./index.bin").unwrap();
+    println!("Done serializing to disk");
+
+    let start = time::Instant::now();
+    let from_disk_index = SearchIndex::deserialize_from_file("./index.bin").unwrap();
+    let result = from_disk_index.search("Ankur", false);
+    println!("Result from disk: {:?}", result);
+
+    let duration = start.elapsed();
+    println!("Time elapsed in expensive_function() is: {:?}", duration);
+}

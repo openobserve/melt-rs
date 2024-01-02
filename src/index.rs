@@ -3,8 +3,10 @@ use std::fs;
 use std::fs::File;
 use std::io::{Error, Read};
 
+use bincode::serialize_into;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::io::BufWriter;
 
 use crate::bigrams::bigram;
 use crate::bloom::estimate_parameters;
@@ -72,6 +74,7 @@ impl SearchIndex {
         if trigrams.is_empty() {
             return vec![];
         }
+
         let results: Vec<_> = self
             .shards
             .par_iter()
@@ -108,15 +111,25 @@ impl SearchIndex {
         let serialized: Vec<u8> = bincode::serialize(&self.shards).unwrap();
         serialized.len()
     }
-}
 
-fn get_file_as_byte_vec(filename: &str) -> Result<Vec<u8>, Error> {
-    let mut f = File::open(&filename)?;
-    let metadata = fs::metadata(&filename)?;
-    let mut buffer = vec![0; metadata.len() as usize];
-    f.read(&mut buffer)?;
+    pub fn serialize_to_file(&self, filename: &str) -> Result<(), Box<bincode::ErrorKind>> {
+        let mut f = BufWriter::new(File::create(filename).unwrap());
+        serialize_into(&mut f, self)
+    }
 
-    Ok(buffer)
+    pub fn deserialize_from_file(filename: &str) -> Result<SearchIndex, Box<bincode::ErrorKind>> {
+        let bytes = Self::get_file_as_byte_vec(filename).unwrap();
+        bincode::deserialize(&bytes[..])
+    }
+
+    fn get_file_as_byte_vec(filename: &str) -> Result<Vec<u8>, Error> {
+        let mut f = File::open(&filename)?;
+        let metadata = fs::metadata(&filename)?;
+        let mut buffer = vec![0; metadata.len() as usize];
+        f.read(&mut buffer)?;
+
+        Ok(buffer)
+    }
 }
 
 fn grams(query: &str) -> Vec<String> {
@@ -140,6 +153,7 @@ fn test_search_non_case_sens() {
     let i = index.add(item);
     let string = "hello".to_string();
     let vec = index.search(string.as_str(), true);
+    println!("search result 1 {:?}", vec);
     let res = vec.first().unwrap();
     assert_eq!(*res, i as usize);
 
@@ -149,6 +163,8 @@ fn test_search_non_case_sens() {
     let i = index.add(item);
     let string = "Hello".to_string();
     let vec = index.search(string.as_str(), true);
+    println!("search result 2 {:?}", vec);
+
     let res = vec.first().unwrap();
     assert_eq!(*res, i as usize);
 
@@ -156,6 +172,8 @@ fn test_search_non_case_sens() {
     index.add(item);
     let string = "He3llo".to_string();
     let vec = index.search(string.as_str(), true);
+    println!("search result 3 {:?}", vec);
+
     let res = vec.first().unwrap_or(&(0 as usize));
     assert_eq!(*res, 0 as usize);
 }
